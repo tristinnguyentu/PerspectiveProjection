@@ -1,8 +1,9 @@
 var xyCoords = [];
 var xyzCoords = [];
 var lineTracker, lineTrackerLabel, shapeSelect;
-var downloadButton, loadButton, clearButton;
+var downloadButton, loadButton, clearButton, hideCoordsButton;
 var lineCount = 0;
+var sideLength;
 var lineInput;
 var scaleFactor = 1;
 var translateInput = [];
@@ -12,10 +13,10 @@ var scaleCenterInput;
 var rotCenterInput;
 var lineFileData = [];
 var center = []; //center of object
+var hideCoords;
 
 function setup() {
     var canvas = createCanvas(windowWidth, windowHeight);
-    pixelDensity(1);
     canvas.style('display', 'block');
     background('black');
 
@@ -27,10 +28,10 @@ function setup() {
     lineTracker = createElement('p');
 
     shapeSelect = createSelect();
-    shapeSelect.option('cube');
-    shapeSelect.option('pyramid');
     shapeSelect.option('house');
-    shapeSelect.selected('cube');
+    shapeSelect.option('rectangular prism');
+    shapeSelect.option('pyramid');
+    shapeSelect.selected('house');
 
     shapeSelect.style('height', '1.4rem');
 
@@ -43,6 +44,9 @@ function setup() {
     downloadButton = createButton('Download Input');
     downloadButton.mousePressed(downloadInput);
 
+    hideCoordsButton = createButton('Hide Coordinates');
+    hideCoordsButton.mousePressed(toggleCoords);
+
     clearButton = createButton('Clear');
     clearButton.mousePressed(clearScreen);
 
@@ -54,7 +58,7 @@ function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
     projectToScreen();
 }
-function draw() {
+function draw() { 
     projectToScreen();
     handleInput();
     textSize(40);
@@ -72,8 +76,8 @@ function draw() {
     "an object defined in the third dimension and map it onto a 2D screen by taking advantage of the fact " + 
     "that objects farther away appear to be smaller than those closer to the viewer (https://en.wikipedia.org/wiki/3D_projection). Using matrices, any " +  
     "transformations applied to the object in 3D space can also be seen and used to change the viewer's " + 
-    "perspective (shorturl.at/jyDF0). Although perspective projection provides a relatively realistic view of the object, YOU " + 
-    "CANNOT ACCURATELY JUDGE DISTANCES AND ANGLES.\n\nNOTE: The origin (0, 0, 0) is located at the top-left " +
+    "perspective (shorturl.at/jyDF0). Although perspective projection provides a relatively realistic view of the object, you " + 
+    "cannot accurately judge distances and angles.\n\nNOTE: The origin (0, 0, 0) is located at the top-left " +
     "corner of the screen, and the center of rotation and scale is set to be the center of the screen. " + 
     "Line drawing was implemented using Bresenham's algorithmn, and for best results, stay within the positive z axis! \n\n\n" + 
 
@@ -91,17 +95,18 @@ function draw() {
     "A = Rotate Left (Z Axis)",  width/90, .1 * height, 500, 800);
 
     downloadButton.position(lineTrackerLabel.x + 205, lineTrackerLabel.position().y-2);
-    text("Objects (length = 200):", width/90, .75 * height);
+    hideCoordsButton.position(downloadButton.x + 115, downloadButton.position().y);
+    text("Objects:", width/90, .75 * height);
     shapeSelect.position(width/90, .75 * height + 10);
-    loadButton.position(shapeSelect.position().x + 80, shapeSelect.position().y);
-    clearButton.position(loadButton.position().x + loadButton.width + 5, loadButton.position().y);
+    loadButton.position(shapeSelect.position().x + 130, shapeSelect.position().y);
+    clearButton.position(loadButton.position().x + loadButton.width, loadButton.position().y);
     text("Line Input: ", width/90, .85 * height);
     lineInput.position(width/90, .85 * height + 10);
     text("*Make sure z = 0 in order to draw in 2 dimensions!", width/90, .85 * height + 55);
     drawButton.position(lineInput.position().x + lineInput.width + 5, lineInput.position().y);
     
     if(mouseIsPressed) {
-        showCoords();
+        show2DCoords(mouseX, mouseY);
     }
 }
 function handleInput() {
@@ -168,68 +173,67 @@ function handleInput() {
 }
 function loadShape() {
     let shape = shapeSelect.value();
-    let length = 200;
 
     if(shape == 'house') {
         //Front Face
-        xyzCoords.push([center[0] - length/2, center[1] + length/2, center[2] - length/2, center[0] + length/2, center[1] + length/2, center[2] - length/2]); //bottom left to bottom right
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] - length/2, center[0] + length/2, center[1] - length/2, center[2] - length/2]); //bottom right to top right
-        xyzCoords.push([center[0] + length/2, center[1] - length/2, center[2] - length/2, center[0] - length/2, center[1] - length/2, center[2] - length/2]); //top right to top left
-        xyzCoords.push([center[0] - length/2, center[1] - length/2, center[2] - length/2, center[0] - length/2, center[1] + length/2, center[2] - length/2]); //top left to bottom left
+        xyzCoords.push([center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10]); //bottom left to bottom right
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10]); //bottom right to top right
+        xyzCoords.push([center[0] + sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10]); //top right to top left
+        xyzCoords.push([center[0] - sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10]); //top left to bottom left
 
         //Back Face
-        xyzCoords.push([center[0] - length/2, center[1] + length/2, center[2] + length/2, center[0] + length/2, center[1] + length/2, center[2] + length/2]); //bottom left to bottom right
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] + length/2, center[0] + length/2, center[1] - length/2, center[2] + length/2]); //bottom right to top right
-        xyzCoords.push([center[0] + length/2, center[1] - length/2, center[2] + length/2, center[0] - length/2, center[1] - length/2, center[2] + length/2]); //top right to top left
-        xyzCoords.push([center[0] - length/2, center[1] - length/2, center[2] + length/2, center[0] - length/2, center[1] + length/2, center[2] + length/2]); //top left to bottom left
+        xyzCoords.push([center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10, center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]); //bottom left to bottom right
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10, center[0] + sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]); //bottom right to top right
+        xyzCoords.push([center[0] + sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10, center[0] - sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]); //top right to top left
+        xyzCoords.push([center[0] - sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]); //top left to bottom left
 
         //Connecting the Faces
-        xyzCoords.push([center[0] - length/2, center[1] + length/2, center[2] - length/2, center[0] - length/2, center[1] + length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] - length/2, center[0] + length/2, center[1] + length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] + length/2, center[1] - length/2, center[2] - length/2, center[0] + length/2, center[1] - length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] - length/2, center[1] - length/2, center[2] - length/2, center[0] - length/2, center[1] - length/2, center[2] + length/2]);
+        xyzCoords.push([center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] + sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] - sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]);
 
         //Roof
-        xyzCoords.push([center[0], center[1] - length, center[2], center[0] - length/2, center[1] - length/2, center[2] - length/2]); 
-        xyzCoords.push([center[0], center[1] - length, center[2], center[0] + length/2, center[1] - length/2, center[2] - length/2]); 
-        xyzCoords.push([center[0], center[1] - length, center[2], center[0] + length/2, center[1] - length/2, center[2] + length/2]); 
-        xyzCoords.push([center[0], center[1] - length, center[2], center[0] - length/2, center[1] - length/2, center[2] + length/2]); 
+        xyzCoords.push([center[0], center[1] - sideLength, center[2], center[0] - sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10]); 
+        xyzCoords.push([center[0], center[1] - sideLength, center[2], center[0] + sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10]); 
+        xyzCoords.push([center[0], center[1] - sideLength, center[2], center[0] + sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]); 
+        xyzCoords.push([center[0], center[1] - sideLength, center[2], center[0] - sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]); 
 
         lineCount += 16; 
     }
-    else if(shape == 'cube') {
+    else if(shape == 'rectangular prism') {
         //Front Face
-        xyzCoords.push([center[0] - length/2, center[1] + length/2, center[2] - length/2, center[0] + length/2, center[1] + length/2, center[2] - length/2]); //bottom left to bottom right
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] - length/2, center[0] + length/2, center[1] - length/2, center[2] - length/2]); //bottom right to top right
-        xyzCoords.push([center[0] + length/2, center[1] - length/2, center[2] - length/2, center[0] - length/2, center[1] - length/2, center[2] - length/2]); //top right to top left
-        xyzCoords.push([center[0] - length/2, center[1] - length/2, center[2] - length/2, center[0] - length/2, center[1] + length/2, center[2] - length/2]); //top left to bottom left
+        xyzCoords.push([center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10]); //bottom left to bottom right
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10]); //bottom right to top right
+        xyzCoords.push([center[0] + sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10]); //top right to top left
+        xyzCoords.push([center[0] - sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10]); //top left to bottom left
 
         //Back Face
-        xyzCoords.push([center[0] - length/2, center[1] + length/2, center[2] + length/2, center[0] + length/2, center[1] + length/2, center[2] + length/2]); //bottom left to bottom right
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] + length/2, center[0] + length/2, center[1] - length/2, center[2] + length/2]); //bottom right to top right
-        xyzCoords.push([center[0] + length/2, center[1] - length/2, center[2] + length/2, center[0] - length/2, center[1] - length/2, center[2] + length/2]); //top right to top left
-        xyzCoords.push([center[0] - length/2, center[1] - length/2, center[2] + length/2, center[0] - length/2, center[1] + length/2, center[2] + length/2]); //top left to bottom left
+        xyzCoords.push([center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10, center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]); //bottom left to bottom right
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10, center[0] + sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]); //bottom right to top right
+        xyzCoords.push([center[0] + sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10, center[0] - sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]); //top right to top left
+        xyzCoords.push([center[0] - sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]); //top left to bottom left
 
         //Connecting the Faces
-        xyzCoords.push([center[0] - length/2, center[1] + length/2, center[2] - length/2, center[0] - length/2, center[1] + length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] - length/2, center[0] + length/2, center[1] + length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] + length/2, center[1] - length/2, center[2] - length/2, center[0] + length/2, center[1] - length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] - length/2, center[1] - length/2, center[2] - length/2, center[0] - length/2, center[1] - length/2, center[2] + length/2]);
+        xyzCoords.push([center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] + sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] - sideLength/2, center[1] - sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] - sideLength/2, center[2] + sideLength/10]);
 
         lineCount += 12; 
     }
     else if(shape == 'pyramid') {
         //Roof
-        xyzCoords.push([center[0], center[1] - length/2, center[2], center[0] - length/2, center[1] + length/2, center[2] - length/2]); 
-        xyzCoords.push([center[0], center[1] - length/2, center[2], center[0] + length/2, center[1] + length/2, center[2] - length/2]); 
-        xyzCoords.push([center[0], center[1] - length/2, center[2], center[0] + length/2, center[1] + length/2, center[2] + length/2]); 
-        xyzCoords.push([center[0], center[1] - length/2, center[2], center[0] - length/2, center[1] + length/2, center[2] + length/2]);
+        xyzCoords.push([center[0], center[1] - sideLength/2, center[2], center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10]); 
+        xyzCoords.push([center[0], center[1] - sideLength/2, center[2], center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10]); 
+        xyzCoords.push([center[0], center[1] - sideLength/2, center[2], center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]); 
+        xyzCoords.push([center[0], center[1] - sideLength/2, center[2], center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]);
         
         //Base
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] - length/2, center[0] + length/2, center[1] + length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] - length/2, center[1] + length/2, center[2] - length/2, center[0] - length/2, center[1] + length/2, center[2] + length/2]);
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] - length/2, center[0] - length/2, center[1] + length/2, center[2] - length/2]); 
-        xyzCoords.push([center[0] + length/2, center[1] + length/2, center[2] + length/2, center[0] - length/2, center[1] + length/2, center[2] + length/2]); 
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]);
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] - sideLength/10]); 
+        xyzCoords.push([center[0] + sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10, center[0] - sideLength/2, center[1] + sideLength/2, center[2] + sideLength/10]); 
 
         lineCount += 8;
     }
@@ -240,25 +244,41 @@ function clearScreen() { //Initialize, Clear Inputs
     lineTracker.html('');
     updateLineCounter(0);
     lineCount = 0;  
+    sideLength = 600;
     lineFileData = [];
     xyCoords = [];
     xyzCoords = [];
     
     translateInput = [0, 0, 0];
-    center = [width/2, height/2, 200];
+    center = [width/2, height/2, 175];
     rotCenterInput = center; //could be used to change the center of rotation
     scaleCenterInput = center; //could be used to change the center of scale
     
     axis = 'z'; //could be used to change more axes, although x and y have issues with the clipping plane
     angle = 0;
 }
-function showCoords() { //draw coordinates
-    if(!(mouseX <= width/5 && mouseY >= loadButton.position().y))
+function show2DCoords(x, y) { //draw coordinates for mouse
+    if(!(x <= width/5 && y >= loadButton.position().y) && !(x >= .85 * width && y <= .15 * height))
     {
         fill('yellow');
         textSize(16);
         textAlign(CENTER);
-        text("(" + floor(mouseX) + ", " + floor(mouseY) + ")", mouseX, mouseY);
+        text("(" + floor(x) + ", " + floor(y) + ")", x, y);
+    }
+}
+function show3DCoords(x, y, z, posX, posY) { //draw coordinates for object
+    fill('yellow');
+    textSize(16);
+    textAlign(CENTER);
+    text("(" + floor(x) + ", " + floor(y) + ", " + floor(z) + ")", posX, posY);
+}
+function toggleCoords() {
+    hideCoords = !hideCoords;
+    if(!hideCoords) {
+        hideCoordsButton.html('Hide Coordinates');
+    }
+    else {
+        hideCoordsButton.html('Show Coordinates');
     }
 }
 function projectToScreen() { //Convert 3D -> 2D
@@ -267,13 +287,15 @@ function projectToScreen() { //Convert 3D -> 2D
     var s = 100; //1/2 screen side
     var d = 20; //distance from the viewpoint to the center of the screen
     
-    var Vsx = width/5;
+    //Viewport centered at (Vcx, Vcy) that is 2Vsx units wide and 2Vsy units high
+    var Vsx = width/5; 
     var Vsy = height/4;
     var Vcx = width/5;
     var Vcy = height/4;
 
     background('black');
     for(var i = 0; i < lineCount; i++) {
+        //Coordinates in the Eye(Camera)-Coordinate System (3D)
         var x0 = parseFloat(xyzCoords[i][0]);
         var y0 = parseFloat(xyzCoords[i][1]);
         var z0 = parseFloat(xyzCoords[i][2])
@@ -283,6 +305,7 @@ function projectToScreen() { //Convert 3D -> 2D
 
         lineFileData.push(x0 + ',' + y0 + ',' + z0 + ',' + x1 + ',' + y1 + ',' + z1 + '/');
         
+        //Screen coordinates (2D)
         var x_s0 = x0;
         var y_s0 = y0;
         var x_s1 = x1;
@@ -297,6 +320,11 @@ function projectToScreen() { //Convert 3D -> 2D
             y_s1 = ((d * y1)/(s * z1)) * Vsy + Vcy;
         }
         xyCoords.push([round(x_s0), round(y_s0), round(x_s1), round(y_s1)]);
+
+        if(!hideCoords) {
+            show3DCoords(x0, y0, z0, round(x_s0), round(y_s0));
+            show3DCoords(x1, y1, z1, round(x_s1), round(y_s1));
+        }
     }  
     draw2DLines();
 }
@@ -478,7 +506,6 @@ function drawInput() {
     projectToScreen();
 }
 function draw2DLines() { //Draws the 2D lines representing the object
-    background('black');
     for(var i = 0; i < lineCount; i++) {
         var x0 = xyCoords[i][0];
         var y0 = xyCoords[i][1];
