@@ -81,7 +81,7 @@ function draw() {
     "corner of the screen, and the center of rotation and scale is set to be the center of the screen. " + 
     "Line drawing was implemented using Bresenham's algorithmn, and for best results, stay within the positive z axis! \n\n\n" + 
 
-    "Controls/3D Transformations: \n\n" +
+    "CONTROLS (3D Transformations): \n\n" +
     "Click (Hold) = See 2D Coordinates \n" +
     "Left Arrow = Move Left (Translate Object Right on X-Axis) \n" + 
     "Right Arrow = Move Right (Translate Object Right on X-Axis) \n" +
